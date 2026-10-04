@@ -1,4 +1,5 @@
 pipeline {
+
     agent any
 
     environment {
@@ -7,13 +8,6 @@ pipeline {
     }
 
     stages {
-
-        stage('Checkout') {
-            steps {
-                echo 'Checking out source code...'
-                checkout scm
-            }
-        }
 
         stage('Build') {
             steps {
@@ -26,23 +20,25 @@ pipeline {
         }
 
         stage('Test') {
-		steps {
-        echo 'Testing Docker image...'
+            steps {
+                echo 'Testing Docker image...'
 
-        sh '''
-            docker rm -f test-nginx-container || true
+                sh '''
+                    docker rm -f test-nginx-container || true
 
-            docker run -d \
-                --name test-nginx-container \
-                ${IMAGE_NAME}:latest
+                    docker run -d \
+                        --name test-nginx-container \
+                        ${IMAGE_NAME}:latest
 
-            sleep 3
+                    sleep 3
 
-            docker exec test-nginx-container \
-                wget -q --spider http://localhost/ || exit 1
+                    docker exec test-nginx-container \
+                        wget -q --spider http://127.0.0.1/
 
-            docker rm -f test-nginx-container
-        '''
+                    echo "Nginx image test successful!"
+
+                    docker rm -f test-nginx-container
+                '''
             }
         }
 
@@ -57,6 +53,10 @@ pipeline {
                         --name ${CONTAINER_NAME} \
                         -p 8081:80 \
                         ${IMAGE_NAME}:latest
+
+                    sleep 3
+
+                    docker ps --filter name=${CONTAINER_NAME}
                 '''
             }
         }
@@ -66,8 +66,10 @@ pipeline {
                 echo 'Checking deployed website...'
 
                 sh '''
-                    sleep 3
-                    curl -f http://localhost:8081
+                    curl -f http://host.docker.internal:8081
+
+                    echo ""
+                    echo "Nginx deployment smoke test successful!"
                 '''
             }
         }
@@ -75,11 +77,18 @@ pipeline {
 
     post {
         success {
+            echo '======================================'
             echo 'CI/CD Pipeline completed successfully!'
+            echo '======================================'
+            echo 'Application: Nginx'
+            echo 'Deployment Port: 8081'
+            echo '======================================'
         }
 
         failure {
-            echo 'CI/CD Pipeline failed!'
+            echo '======================================'
+            echo 'CI/CD Pipeline FAILED!'
+            echo '======================================'
         }
 
         always {
