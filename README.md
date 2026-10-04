@@ -1,121 +1,151 @@
-# End-to-End CI/CD Pipeline Report
+# Nginx CI/CD Pipeline Project
 
-## 1. Project Title
+An end-to-end CI/CD pipeline for deploying a simple static website using **GitHub, Jenkins, Docker, and Nginx**.
 
-**End-to-End CI/CD Pipeline for a Static Web Application using Jenkins, Docker and Nginx**
-
----
-
-## 2. Objective
-
-The objective of this project is to design and implement an end-to-end CI/CD pipeline for a simple static web application.
-
-The pipeline automatically:
-
-- Retrieves source code from GitHub
-- Builds a Docker image
-- Tests the Nginx application
-- Deploys the application using Docker
-- Performs a smoke test after deployment
-
-The web application is served using the Nginx web server.
+The project demonstrates automated source-code checkout, Docker image build, application testing, container deployment, and smoke testing.
 
 ---
 
-## 3. Technologies and Tools Used
+## Project Objective
 
-| Tool | Purpose |
+The objective of this project is to design and implement a simple end-to-end CI/CD pipeline with the following stages:
+
+1. Build
+2. Test
+3. Deployment
+
+The application is a simple static HTML website served using the Nginx web server.
+
+---
+
+## Technologies Used
+
+| Technology | Purpose |
 |---|---|
 | Git | Version control |
 | GitHub | Source code repository |
 | Jenkins | CI/CD automation |
-| Docker | Containerization and deployment |
+| Docker | Application containerization |
 | Nginx | Web server |
-| HTML | Static web application |
-| cURL | Deployment smoke testing |
-| Wget | Container-level testing |
+| HTML | Static website |
+| cURL / Wget | Application testing |
 
 ---
 
-## 4. Application Architecture
+## Project Architecture
 
 ```text
-Developer
-    |
-    v
-GitHub Repository
-    |
-    v
-Jenkins
-    |
-    +----------------+
-    |                |
-    v                v
-  Build             Test
-    |                |
-    +-------+--------+
-            |
-            v
-       Docker Image
-            |
-            v
-         Deploy
-            |
-            v
-      Nginx Container
-            |
-            v
-       Smoke Test
-            |
-            v
-     Static Web Page
+                    Developer
+                        |
+                        v
+                 +-------------+
+                 |   GitHub    |
+                 | Repository  |
+                 +------+------+
+                        |
+                        | Source Code
+                        v
+                 +-------------+
+                 |   Jenkins   |
+                 |    CI/CD    |
+                 +------+------+
+                        |
+          +-------------+-------------+
+          |             |             |
+          v             v             v
+       Build          Test         Deploy
+          |             |             |
+          +-------------+-------------+
+                        |
+                        v
+                 +-------------+
+                 |   Docker    |
+                 |  Container  |
+                 +------+------+
+                        |
+                        v
+                 +-------------+
+                 |    Nginx    |
+                 | Web Server  |
+                 +------+------+
+                        |
+                        v
+                Static Website
+                 Port 8081
 ```
 
 ---
 
-## 5. CI/CD Pipeline Stages
-
-### Stage 1: Source Code Checkout
-
-**Tool:** Git / GitHub / Jenkins SCM
-
-Jenkins retrieves the latest source code from the GitHub repository.
-
-Repository:
+## Project Structure
 
 ```text
-https://github.com/rajesh1927/ci-cd-project-task4
+ci-cd-project-task4/
+│
+├── index.html
+├── nginx.conf
+├── Dockerfile
+├── Jenkinsfile
+├── README.md
+└── .dockerignore
 ```
-
-The Jenkins Pipeline job is configured with:
-
-```text
-Pipeline script from SCM
-SCM: Git
-Branch: main
-Script Path: Jenkinsfile
-```
-
-Jenkins automatically checks out the source code before executing the pipeline.
-
-**Purpose:**  
-To ensure that the pipeline always works with the latest version of the application source code.
 
 ---
 
-### Stage 2: Build
+# Application
 
-**Tools:** Docker, Dockerfile
+The project contains a simple static HTML website.
 
-Jenkins builds the Docker image using the project Dockerfile.
+The website is served by Nginx from:
 
-Command:
-
-```bash
-docker build -t nginx-cicd-project:latest .
+```text
+/usr/share/nginx/html
 ```
 
-The Dockerfile uses the lightweight Nginx Alpine image:
+The default application port inside the Docker container is:
+
+```text
+80
+```
+
+The container port is mapped to:
+
+```text
+8081
+```
+
+Therefore, the application can be accessed using:
+
+```text
+http://localhost:8081
+```
+
+---
+
+# Nginx Configuration
+
+The `nginx.conf` file configures Nginx to listen on port `80` and serve the static website.
+
+```nginx
+server {
+    listen 80;
+    server_name _;
+
+    root /usr/share/nginx/html;
+    index index.html;
+
+    location / {
+        try_files $uri $uri/ =404;
+    }
+}
+```
+
+---
+
+# Docker Configuration
+
+The application uses the official lightweight Nginx Alpine image.
+
+## Dockerfile
 
 ```dockerfile
 FROM nginx:alpine
@@ -127,95 +157,162 @@ COPY nginx.conf /etc/nginx/conf.d/default.conf
 EXPOSE 80
 ```
 
-**Purpose:**  
-To create a consistent and portable Docker image containing the web application and Nginx web server.
+### Docker Build
 
----
-
-### Stage 3: Test
-
-**Tools:** Docker, Wget
-
-A temporary Docker container is started from the newly created image.
-
-The pipeline checks whether Nginx is responding:
+Build the Docker image:
 
 ```bash
-docker exec test-nginx-container \
-    wget -q --spider http://127.0.0.1/
+docker build -t nginx-cicd-project:latest .
 ```
 
-If the test succeeds, the temporary container is removed.
+Check the image:
 
-If the test fails, the pipeline stops and deployment is not performed.
-
-**Purpose:**  
-To verify that the Docker image contains a working Nginx web server before deploying it.
+```bash
+docker images
+```
 
 ---
 
-### Stage 4: Deployment
+# Run Application Manually
 
-**Tools:** Docker, Nginx
-
-After successful testing, Jenkins removes the previous application container and starts a new one.
+Run the Nginx container:
 
 ```bash
-docker rm -f nginx-cicd-container || true
-
 docker run -d \
     --name nginx-cicd-container \
     -p 8081:80 \
     nginx-cicd-project:latest
 ```
 
-Nginx listens on port `80` inside the container.
+Check the running container:
 
-Docker maps port `80` to port `8081` on the host.
-
-```text
-Host Port 8081
-      |
-      v
-Container Port 80
-      |
-      v
-Nginx
+```bash
+docker ps
 ```
 
-The application can be accessed at:
+Expected port mapping:
+
+```text
+0.0.0.0:8081->80/tcp
+```
+
+Test the application:
+
+```bash
+curl http://localhost:8081
+```
+
+Open the application in a browser:
 
 ```text
 http://localhost:8081
 ```
 
-**Purpose:**  
-To automatically deploy the tested Docker image.
+Stop and remove the container:
+
+```bash
+docker rm -f nginx-cicd-container
+```
 
 ---
 
-### Stage 5: Smoke Test
+# CI/CD Pipeline
 
-**Tools:** cURL
+The Jenkins pipeline automates the complete deployment process.
 
-After deployment, Jenkins verifies that the deployed application is accessible.
+```text
+GitHub
+   |
+   v
+Jenkins
+   |
+   v
+Build
+   |
+   v
+Test
+   |
+   v
+Docker Deploy
+   |
+   v
+Smoke Test
+   |
+   v
+Nginx Website
+```
 
-Because Jenkins is running inside Docker on Docker Desktop, the host application is accessed using:
+---
+
+# Jenkins Pipeline Stages
+
+## 1. Build
+
+Jenkins builds the Docker image using the Dockerfile.
+
+Command:
+
+```bash
+docker build -t nginx-cicd-project:latest .
+```
+
+If the Docker build fails, the pipeline stops.
+
+---
+
+## 2. Test
+
+Jenkins starts a temporary Nginx container and checks whether Nginx is responding.
+
+The test uses:
+
+```bash
+docker exec test-nginx-container \
+    wget -q --spider http://127.0.0.1/
+```
+
+If Nginx responds successfully, the temporary test container is removed.
+
+If the test fails, the deployment stage does not run.
+
+---
+
+## 3. Deploy
+
+After successful testing, Jenkins starts the production container:
+
+```bash
+docker run -d \
+    --name nginx-cicd-container \
+    -p 8081:80 \
+    nginx-cicd-project:latest
+```
+
+If an older container exists, Jenkins removes it first:
+
+```bash
+docker rm -f nginx-cicd-container || true
+```
+
+---
+
+## 4. Smoke Test
+
+After deployment, Jenkins verifies that the deployed website is accessible.
+
+When Jenkins is running inside Docker on Docker Desktop, the host application is tested using:
 
 ```bash
 curl -f http://host.docker.internal:8081
 ```
 
-If the HTTP request succeeds, the deployment is considered successful.
-
-**Purpose:**  
-To verify that the deployed application is actually responding after deployment.
+A successful response confirms that the Nginx application has been deployed correctly.
 
 ---
 
-## 6. Pipeline Configuration
+# Jenkinsfile
 
-The complete Jenkins pipeline is defined in the `Jenkinsfile`.
+The pipeline contains the following stages:
 
 ```groovy
 pipeline {
@@ -301,6 +398,9 @@ pipeline {
             echo '======================================'
             echo 'CI/CD Pipeline completed successfully!'
             echo '======================================'
+            echo 'Application: Nginx'
+            echo 'Deployment Port: 8081'
+            echo '======================================'
         }
 
         failure {
@@ -318,37 +418,120 @@ pipeline {
 
 ---
 
-## 7. Pipeline Execution Flow
+# Jenkins Setup
 
-The final CI/CD workflow is:
+Jenkins can be run using Docker.
+
+Create a Docker network:
+
+```bash
+docker network create jenkins
+```
+
+Run Jenkins:
+
+```bash
+docker run -d \
+    --name jenkins \
+    --restart unless-stopped \
+    --network jenkins \
+    -p 8080:8080 \
+    -p 50000:50000 \
+    -v jenkins_home:/var/jenkins_home \
+    -v /var/run/docker.sock:/var/run/docker.sock \
+    jenkins/jenkins:lts
+```
+
+Check Jenkins:
+
+```bash
+docker ps
+```
+
+Jenkins is available at:
 
 ```text
-GitHub
-   |
-   v
-Jenkins Checkout
-   |
-   v
-Build Docker Image
-   |
-   v
-Test Nginx Container
-   |
-   v
-Deploy Nginx Container
-   |
-   v
-Smoke Test
-   |
-   v
-SUCCESS
+http://localhost:8080
 ```
 
 ---
 
-## 8. Expected Result
+# Jenkins Job Configuration
 
-A successful Jenkins execution should show:
+Create a new Jenkins Pipeline job.
+
+### Job Name
+
+```text
+nginx-cicd-pipeline-project
+```
+
+### Pipeline Definition
+
+Select:
+
+```text
+Pipeline script from SCM
+```
+
+### SCM
+
+Select:
+
+```text
+Git
+```
+
+### Repository
+
+```text
+https://github.com/rajesh1927/ci-cd-project-task4
+```
+
+### Branch
+
+```text
+*/main
+```
+
+### Script Path
+
+```text
+Jenkinsfile
+```
+
+Jenkins automatically checks out the repository before executing the pipeline.
+
+---
+
+# Pipeline Execution
+
+When the Jenkins job is started, the following process occurs:
+
+```text
+1. Jenkins checks out code
+             |
+             v
+2. Docker image is built
+             |
+             v
+3. Docker image is tested
+             |
+             v
+4. Nginx container is deployed
+             |
+             v
+5. Deployment is smoke tested
+             |
+             v
+6. Pipeline SUCCESS
+```
+
+---
+
+# Expected Jenkins Result
+
+A successful pipeline should show:
 
 ```text
 Build          SUCCESS
@@ -363,39 +546,114 @@ Final result:
 Finished: SUCCESS
 ```
 
-The deployed website is available at:
+---
+
+# Application Access
+
+### Jenkins
+
+```text
+http://localhost:8080
+```
+
+### Nginx Application
 
 ```text
 http://localhost:8081
 ```
 
----
+### Test from Terminal
 
-## 9. Benefits of the Pipeline
-
-This CI/CD pipeline provides:
-
-- Automated build process
-- Automated testing
-- Automated deployment
-- Consistent Docker-based environment
-- Nginx web server deployment
-- Deployment verification
-- Reduced manual deployment effort
-- Repeatable deployment process
-
----
-
-## 10. Conclusion
-
-The project successfully demonstrates an end-to-end CI/CD workflow using GitHub, Jenkins, Docker and Nginx.
-
-The pipeline automatically builds, tests, deploys and verifies a static web application.
-
-The final workflow is:
-
-```text
-GitHub → Jenkins → Build → Test → Deploy → Smoke Test → Nginx
+```bash
+curl http://localhost:8081
 ```
 
-This satisfies the requirements for an end-to-end CI/CD pipeline with documented stages, tools, pipeline configuration and deployment verification.
+---
+
+# Troubleshooting
+
+## Check running containers
+
+```bash
+docker ps
+```
+
+## Check Nginx container logs
+
+```bash
+docker logs nginx-cicd-container
+```
+
+## Check Nginx configuration
+
+```bash
+docker exec nginx-cicd-container nginx -t
+```
+
+Expected:
+
+```text
+syntax is ok
+test is successful
+```
+
+## Check Nginx response
+
+```bash
+curl http://localhost:8081
+```
+
+## Check Jenkins container
+
+```bash
+docker ps --filter name=jenkins
+```
+
+## Check Docker images
+
+```bash
+docker images
+```
+
+---
+
+# CI/CD Benefits
+
+This project demonstrates the following DevOps practices:
+
+- Source code management using Git
+- GitHub-based collaboration
+- Automated CI/CD using Jenkins
+- Docker containerization
+- Automated application testing
+- Automated deployment
+- Nginx web server deployment
+- Deployment verification using smoke testing
+
+---
+
+# Conclusion
+
+This project successfully implements an end-to-end CI/CD pipeline for a simple static website.
+
+The complete workflow is:
+
+```text
+GitHub
+   ↓
+Jenkins
+   ↓
+Docker Build
+   ↓
+Automated Test
+   ↓
+Docker Deployment
+   ↓
+Nginx
+   ↓
+Smoke Test
+   ↓
+Website
+```
+
+The project demonstrates how Jenkins can automate the process of building, testing, and deploying a web application using Docker and Nginx.
